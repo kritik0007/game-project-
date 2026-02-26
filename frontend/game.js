@@ -1,3 +1,5 @@
+console.log("Correct game.js loaded");
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -15,13 +17,23 @@ class Fighter {
         this.health = 100;
         this.velocityY = 0;
         this.isJumping = false;
+
+        this.isAttacking = false;
         this.attackCooldown = 0;
+        this.comboStep = 0;
+        this.comboTimer = 0;
+
         this.isHit = false;
     }
 
     draw() {
         ctx.fillStyle = this.isHit ? "red" : this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        if (this.isAttacking) {
+            ctx.fillStyle = "yellow";
+            ctx.fillRect(this.x + this.width, this.y + 40, 40, 40);
+        }
     }
 
     update() {
@@ -34,21 +46,40 @@ class Fighter {
         }
 
         if (this.attackCooldown > 0) this.attackCooldown--;
+        if (this.comboTimer > 0) this.comboTimer--;
+        else this.comboStep = 0;
 
         this.draw();
     }
 
     attack(target) {
-        if (this.attackCooldown === 0 &&
-            Math.abs(this.x - target.x) < 80) {
+        if (this.attackCooldown > 0) return;
 
-            target.health -= 10;
-            target.x += (this.x < target.x ? 20 : -20); // knockback
+        this.isAttacking = true;
+        this.attackCooldown = 25;
+
+        this.comboStep++;
+        if (this.comboStep > 3) this.comboStep = 1;
+
+        this.comboTimer = 40;
+
+        const hitX = this.x + this.width;
+        const hitY = this.y + 40;
+
+        if (
+            hitX < target.x + target.width &&
+            hitX + 40 > target.x &&
+            hitY < target.y + target.height &&
+            hitY + 40 > target.y
+        ) {
+            let damage = 5 * this.comboStep;
+            target.health -= damage;
+            target.x += 15 * this.comboStep;
             target.isHit = true;
             setTimeout(() => target.isHit = false, 100);
-
-            this.attackCooldown = 40;
         }
+
+        setTimeout(() => this.isAttacking = false, 150);
     }
 }
 
@@ -62,7 +93,6 @@ function drawBackground() {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // ground
     ctx.fillStyle = "#111";
     ctx.fillRect(0, 470, canvas.width, 30);
 }
@@ -85,11 +115,11 @@ function enemyAI() {
 
 function showGameOver(text) {
     ctx.fillStyle = "rgba(0,0,0,0.7)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = "white";
     ctx.font = "50px Arial";
-    ctx.fillText(text, canvas.width/2 - 120, canvas.height/2);
+    ctx.fillText(text, canvas.width / 2 - 120, canvas.height / 2);
 }
 
 function gameLoop() {
@@ -103,7 +133,9 @@ function gameLoop() {
         player.isJumping = true;
     }
 
-    if (keys[" "]) player.attack(enemy);
+    if (keys[" "] && !player.isAttacking) {
+        player.attack(enemy);
+    }
 
     player.update();
     enemy.update();
