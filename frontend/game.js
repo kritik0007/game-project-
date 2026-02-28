@@ -17,7 +17,9 @@ class Fighter {
         this.health = 100;
         this.velocityY = 0;
         this.isJumping = false;
-
+        this.energy = 0;
+        this.maxEnergy = 100;
+        this.dashCooldown = 0;
         this.isAttacking = false;
         this.attackCooldown = 0;
         this.comboStep = 0;
@@ -35,11 +37,17 @@ class Fighter {
             ctx.fillRect(this.x + this.width, this.y + 40, 40, 40);
         }
     }
+    dash(direction) {
+    if (this.dashCooldown > 0) return;
+
+    this.x += direction * 60;
+    this.dashCooldown = 50;
+    }
 
     update() {
         this.y += this.velocityY;
         this.velocityY += 0.6;
-
+        if (this.dashCooldown > 0) this.dashCooldown--;
         if (this.y >= 330) {
             this.y = 330;
             this.isJumping = false;
@@ -57,6 +65,8 @@ class Fighter {
 
         this.isAttacking = true;
         this.attackCooldown = 25;
+        this.energy += 10;
+        if (this.energy > this.maxEnergy) this.energy = this.maxEnergy;
 
         this.comboStep++;
         if (this.comboStep > 3) this.comboStep = 1;
@@ -81,6 +91,21 @@ class Fighter {
 
         setTimeout(() => this.isAttacking = false, 150);
     }
+    specialAttack(target) {
+    if (this.energy < 50) return;
+
+    this.energy -= 50;
+    this.isAttacking = true;
+
+    if (Math.abs(this.x - target.x) < 120) {
+        target.health -= 25;
+        target.x += (this.x < target.x ? 50 : -50);
+        target.isHit = true;
+        setTimeout(() => target.isHit = false, 200);
+    }
+
+    setTimeout(() => this.isAttacking = false, 300);
+}
 }
 
 const player = new Fighter(200, "black");
@@ -100,6 +125,7 @@ function drawBackground() {
 function updateHealthBars() {
     document.getElementById("playerHealth").style.width = player.health + "%";
     document.getElementById("enemyHealth").style.width = enemy.health + "%";
+    document.getElementById("energyBar").style.width = player.energy + "%";
 }
 
 function enemyAI() {
@@ -124,6 +150,11 @@ function showGameOver(text) {
 
 function gameLoop() {
     drawBackground();
+    if (keys["e"]) {
+    player.specialAttack(enemy);
+    }
+    if (keys["Shift"] && keys["d"]) player.dash(1);
+    if (keys["Shift"] && keys["a"]) player.dash(-1);
 
     if (keys["a"]) player.x -= 4;
     if (keys["d"]) player.x += 4;
