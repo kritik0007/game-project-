@@ -29,14 +29,32 @@ class Fighter {
     }
 
     draw() {
-        ctx.fillStyle = this.isHit ? "red" : this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.fillStyle = this.isHit ? "red" : this.color;
 
-        if (this.isAttacking) {
-            ctx.fillStyle = "yellow";
-            ctx.fillRect(this.x + this.width, this.y + 40, 40, 40);
-        }
+    const centerX = this.x + this.width / 2;
+    const headY = this.y - 20;
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(centerX, headY, 15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body
+    ctx.fillRect(centerX - 5, this.y, 10, 50);
+
+    // Arms
+    ctx.fillRect(centerX - 25, this.y + 10, 50, 8);
+
+    // Legs
+    ctx.fillRect(centerX - 15, this.y + 50, 10, 40);
+    ctx.fillRect(centerX + 5, this.y + 50, 10, 40);
+
+    // Attack hitbox debug
+    if (this.isAttacking) {
+        ctx.fillStyle = "yellow";
+        ctx.fillRect(this.x + this.width, this.y + 30, 40, 40);
     }
+}
     dash(direction) {
     if (this.dashCooldown > 0) return;
 
@@ -50,6 +68,7 @@ class Fighter {
         if (this.dashCooldown > 0) this.dashCooldown--;
         if (this.y >= 330) {
             this.y = 330;
+            this.velocityY = 0;
             this.isJumping = false;
         }
 
@@ -159,10 +178,10 @@ function gameLoop() {
     if (keys["a"]) player.x -= 4;
     if (keys["d"]) player.x += 4;
 
-    if (keys["w"] && !player.isJumping) {
-        player.velocityY = -12;
-        player.isJumping = true;
-    }
+    if (keys["w"] && !player.isJumping && player.y === 330) {
+    player.velocityY = -12;
+    player.isJumping = true;
+}
 
     if (keys[" "] && !player.isAttacking) {
         player.attack(enemy);
